@@ -1,0 +1,699 @@
+---
+title: "data-viz"
+author: "Kate Becker"
+date: "2024-02-20"
+output: html_document
+---
+
+library
+```{r}
+library(tidyverse)
+library(streamgraph)
+library(viridis)
+install.packages("hrbrthemes")
+library(hrbrthemes)
+library(plotly)
+```
+
+data
+```{r}
+harvest <- read_csv("data/Harvest_All_Sectors.csv")
+```
+
+```{r}
+harvest <- harvest %>%
+  janitor::clean_names()  
+
+commerical <-harvest %>%
+  group_by(species) %>%
+  filter(sector == "Commercial")
+```
+
+
+
+```{r}
+unique(harvest$sector)
+```
+
+
+```{r}
+# Plot
+commerical %>% 
+  streamgraph(key="species", value="harvest", date="year") %>%
+  sg_fill_brewer("BuPu")
+```
+
+
+```{r}
+p <- commerical %>% 
+  ggplot(aes(x=year, y=harvest, fill=species, text=species)) +
+    geom_area(alpha = 0.5) +
+    scale_fill_viridis(discrete = TRUE) +
+    theme(legend.position="none") +
+    ggtitle("Popularity of American names in the previous 30 years") +
+    theme(legend.position="none") 
+  
+ggplotly(p, tooltip="text")
+
+p
+```
+
+
+```{r}
+q <- commerical %>% 
+  # Compute the proportions:
+  group_by(year) %>%
+  mutate(freq = harvest/ sum(harvest)) %>%
+  ungroup() %>%
+  
+  # Plot
+    ggplot( aes(x=year, y=freq, fill=species, color=species, text=species)) +
+    geom_area() +
+    scale_fill_viridis(discrete = TRUE) +
+    scale_color_viridis(discrete = TRUE) +
+    theme(legend.position="none") +
+    ggtitle("Popularity of American names in the previous 30 years") +
+    theme_ipsum() +
+    theme(legend.position="none")
+ggplotly(q, tooltip="text")
+```
+
+
+```{r}
+# Load dataset from github
+q <- commerical %>% 
+  # Compute the proportions:
+  group_by(year) %>%
+  mutate(freq = harvest/ sum(harvest)) %>%
+  ungroup() %>%
+  
+  # Plot
+    ggplot( aes(x=year, y=harvest, fill=species, color=species, text=species)) +
+    geom_area() +
+    scale_fill_viridis(discrete = TRUE) +
+    scale_color_viridis(discrete = TRUE) +
+    theme(legend.position="none") +
+    ggtitle("Popularity of American names in the previous 30 years") +
+    theme_ipsum() +
+    theme(legend.position="none")
+ggplotly(q, tooltip="text")
+
+# Plot
+commerical %>% 
+  streamgraph(key="species", value="harvest", date="year") %>%
+  sg_fill_brewer("BuPu")
+```
+
+
+```{r}
+p <- data %>% 
+  ggplot( aes(x=year, y=n, fill=name, text=name)) +
+    geom_area( ) +
+    scale_fill_viridis(discrete = TRUE) +
+    theme(legend.position="none") +
+    ggtitle("Popularity of American names in the previous 30 years") +
+    theme_ipsum() +
+    theme(legend.position="none") +
+ggplotly(p, tooltip="text")
+
+
+p
+```
+
+
+```{r}
+species <- harvest %>%
+  filter(sector == "commerical") %>%
+  group_by(species) %>%
+  mutate(total = sum(harvest)) %>%
+  select(harvest, total) %>%
+  arrange(desc(total)) %>%
+  distinct(species, total) %>%
+  head(5)
+
+babynames %>%
+  filter(sex == "M", name %in% c("James", "John", "Robert", "Michael", "William")) %>%
+  streamgraph("name", "n", "year")
+```
+
+
+```{r}
+# Load dataset from github
+harvest_stream <- harvest %>% 
+  filter(species %in% c("chinook", "chum", "coho",  "pink")) %>%
+  filter(sector=="Commerical")
+
+# Plot
+harvest_stream %>% 
+  streamgraph(key="species", value="harvest", date="year") %>%
+  sg_fill_brewer("BuPu")
+```
+
+
+```{r}
+install.packages("usmap")
+library(usmap)
+
+str(us_map())
+
+
+df <- us_map(regions = "counties")
+AK <- us_map(include = c("AK"))
+
+```
+
+
+```{r}
+# Create data:
+#data <- data.frame(
+  #year=rep(seq(1990,2016) , each=10),
+  #name=rep(letters[1:10] , 27),
+  #value=sample( seq(0,1,0.0001) , 270)
+#)
+ 
+# Basic stream graph: just give the 3 arguments
+pp <- streamgraph(harvest, key="sasap_region", value="harvest", date="year", height="300px", width="1000px")
+pp 
+
+# save the widget
+# library(htmlwidgets)
+saveWidget(pp, file=paste0( getwd(), "/HtmlWidget/streamgraphBasic.html"))
+
+
+```
+
+
+```{r}
+alaska <- read_csv("data/Alaska-Statewide.csv")
+
+alaska <- alaska %>%
+  janitor::clean_names() 
+  
+```
+
+
+```{r}
+unique(alaska$species_name)
+```
+
+```{r}
+area_year <- alaska %>%
+  group_by(area, year)
+```
+
+```{r}
+install.packages("plotly")
+install.packages("dplyr")
+library(plotly)
+library(dplyr)
+
+```
+
+```{r}
+unique(alaska)
+```
+
+
+```{r}
+fig <- alaska %>%
+  plot_ly(
+  type = "sunburst",
+  labels = "area",
+  parents = "species_name",
+  values = "number_of_fish_estimated"
+)
+ 
+fig
+```
+
+
+```{r}
+df <- read.csv("https://raw.githubusercontent.com/plotly/datasets/718417069ead87650b90472464c7565dc8c2cb1c/coffee-flavors.csv")
+
+```
+
+```{r}
+unique(alaska$area)
+```
+
+
+```{r}
+fig <- df |> 
+  plot_ly(
+    type = "sunburst",
+    ids = ~ids,
+    labels = ~labels,
+    parents = ~parents,
+    domain = list(column = 1),
+    maxdepth = 2,
+    insidetextorientation = "radial"
+  )
+ 
+fig
+```
+
+
+
+
+```{r}
+radarchart(alaska,
+           seg = 12,
+           title = "Spider",
+           pfcol = scales::alpha("gray", 0.3),
+           plwd = 2)
+```
+
+
+```{r}
+pivot <- alaska %>%
+  pivot_wider(names_from = area, values_from = number_of_fish_estimated) %>%
+  group_by(year, species_name)
+```
+
+```{r}
+wide <- alaska %>%
+  pivot_wider(names_from = area, values_from = number_of_fish_estimated) 
+```
+
+
+```{r}
+unique(pivot)
+```
+
+
+```{r}
+islands <- wide %>%
+  select(-c(year, species_name, landed_weight_lbs, whole_weight_lbs, permit_count, processor_count, vessel_count)) 
+```
+
+```{r}
+radarchart(islands,
+           seg = 12,
+           title = "Spider",
+           pfcol = scales::alpha("gray", 0.3),
+           plwd = 2)
+```
+
+
+```{r}
+library(devtools)
+install_github('jokergoo/ComplexHeatmap')
+```
+
+```{r}
+view(mtcars)
+```
+
+
+```{r}
+heat <- alaska %>%
+  select(-c(year, area))
+```
+
+
+```{r}
+class(hea)
+```
+
+```{r}
+
+heat <- heat %>%
+  group_by(species_name)
+data <- as.matrix(heat) 
+```
+
+```{r}
+summary(heat)
+```
+
+```{r}
+view(mtcars)
+```
+
+```{r}
+catch <- heat %>%
+  select(-c(permit_count, vessel_count, processor_count))
+
+```
+
+```{r}
+ggplot(catch, )
+```
+
+
+```{r}
+heatmap(data, scale = "column")
+```
+
+```{r}
+class(alaska$year)
+```
+
+
+```{r}
+alaska_clean <- alaska |>
+
+  # select cols of interest & update names as needed ----
+  select(catch = number_of_fish_estimated, year, species_name) |> 
+  
+    ggplot(mapping = aes(x = year, y = catch, fill = species_name)) +
+  
+  # reverse order of groups so level D4 is closest to x-axis ----
+  geom_area(position = position_stack(reverse = TRUE)) +
+  
+  # update colors to match US Drought Monitor (colors selected using ColorPick Eyedropper from original USDM data viz) ----
+  scale_fill_manual(values = c("#853904", "#FF0000", "#FFC100", "#FFD965", "#FFFF00")) +
+  
+  # set x-axis breaks & remove padding between data and x-axis ----
+  scale_x_date(breaks = scales::breaks_pretty(n = 10),
+               expand = c(0, 0)) +
+
+  # set y-axis breaks & convert values to percentages & & remove padding between data and y-axis----
+  scale_y_continuous(breaks = seq(0, 100, by = 10),
+                     labels = scales::label_percent(scale = 1),
+                     expand = c(0, 0)) 
+  
+  # add title ----
+alaska_clean  
+
+```
+
+
+```{r}
+library(tidyverse)
+
+#..........................import data...........................
+tuesdata <- tidytuesdayR::tt_load('2021-07-20')
+drought <- tuesdata$drought
+```
+
+```{r}
+ggplot(alaska, aes(fill = species_name, y = number_of_fish_estimated, x = year)) +
+  geom_bar(position = "dodge", stat = "identity")
+```
+
+```{r}
+library(ggpubr)
+library(jpeg)
+
+# Download and read sample image (readJPEG doesn't work with urls)
+url <- "https://media.ktoo.org/wp-content/uploads/2023/08/230635_FV_Sallie_wilber-2048x1339-1.jpg"
+download.file(url, destfile = "/Users/katebecker/Documents/Bren/Winter/240/final/eds240-visualizations/data/alaska.jpg")
+img <- readJPEG("data/alaska.jpg")
+
+ggplot(iris, aes(Species, Sepal.Length)) +
+    background_image(img) +
+    geom_boxplot(aes(fill = Species))
+
+
+
+```
+How Have Commercial Salmon Fisheries in Alaska Changed Since 1985?  
+
+
+```{r}
+
+alaska |> 
+  filter(year == 1985) |> 
+  slice_max(order_by = number_of_fish_estimated, n = 15) |> 
+  ggplot(aes(x = fct_reorder(species_name, number_of_fish_estimated), y = number_of_fish_estimated)) +
+  background_image(img) +
+  ggalt::geom_lollipop(point.colour = "white") +
+  scale_y_continuous(labels = scales::comma, limits = c(0,60000000)) + 
+  coord_flip() +
+  theme_bw() +
+  labs(y = "Catch Numbers", 
+       x = "Salmon Species", 
+       title = "Commerical Salmon Catches in 1985")
+
+
+alaska |> 
+  filter(year == 2023) |> 
+  slice_max(order_by = number_of_fish_estimated, n = 15) |> 
+  ggplot(aes(x = fct_reorder(species_name, number_of_fish_estimated), y = number_of_fish_estimated)) +
+  background_image(img) +
+  ggalt::geom_lollipop(point.colour = "white") +
+  scale_y_continuous(labels = scales::comma) + 
+  coord_flip() +
+  theme_bw() +
+  labs(y = "Catch Numbers", 
+       x = "Salmon Species", 
+       title = "Commerical Salmon Catches in 2023")
+
+par(mfrow = c(2,1))
+```
+
+```{r}
+alaska |> 
+  filter(year == 2023) |> 
+  slice_max(order_by = number_of_fish_estimated, n = 15) |> 
+  ggplot(aes(x = fct_reorder(species_name, number_of_fish_estimated), y = number_of_fish_estimated)) +
+  background_image(img) +
+  ggalt::geom_lollipop(point.colour = "white") +
+  scale_y_continuous(labels = scales::comma) + 
+  coord_flip() +
+  theme_bw() +
+  labs(y = "Catch Numbers", 
+       x = "Salmon Species", 
+       title = "2023")
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+alaska |> 
+  filter(year == 1985) |> 
+  slice_max(order_by = number_of_fish_estimated, n = 15) |> 
+  ggplot(aes(x = fct_reorder(species_name, number_of_fish_estimated), y = number_of_fish_estimated)) +
+  ggalt::geom_lollipop(point.colour = "white") +
+  scale_y_continuous(limits = c(0, )) + 
+  coord_flip() +
+  theme_bw()
+```
+
+
+```{r}
+alaska |> 
+  filter(year == 1985) |> 
+  slice_max(order_by = number_of_fish_estimated, n = 20) |> 
+  ggplot(aes(x = fct_reorder(species_name, number_of_fish_estimated), y = number_of_fish_estimated)) +
+  geom_col() +
+  geom_text(aes(label = number_of_fish_estimated), size = 4, hjust = 1.5, color = "white") + 
+  scale_y_continuous(labels = scales::label_currency(accuracy = 1)) + 
+  coord_flip() +
+  theme_bw()
+  
+```
+
+
+for 240:
+- get rid of background 
+- 4 data points: box plot to show data distribution
+- average and sd dot and error bar or a bar plot 
+- use patch work to merge plots together (dumbbell plot)
+- background is distracting! too bold ! need. to have a purpsoe, not a fishing vessel question
+- include photos at the end of the lolipos (transparent fish) 
+- y axis should be in same order 
+- dumbbell plot!
+- for radar(like melissa) gorup by region 
+
+
+```{r}
+unique(commerical$species)
+```
+
+
+## HW 4
+
+```{r}
+# loading the required libraries 
+library("jpeg") 
+library("ggplot2") 
+library("patchwork") 
+library(dplyr)
+
+  
+# plotting the data 
+graph <- ggplot(data_frame, aes(xpos, ypos)) +     
+  geom_point() 
+  
+# specifying the image path 
+path <- "/Users/mallikagupta/Desktop/GFG/gfg.jpeg"
+  
+# read the jpef file from device 
+img <- readJPEG(path, native = TRUE) 
+  
+# adding image to graph  
+img_graph <- graph +                   
+  inset_element(p = img, 
+                left = 0.05, 
+                bottom = 0.65, 
+                right = 0.5, 
+                top = 0.95) 
+  
+# printing graph with image  
+print (img_graph)
+```
+
+
+```{r}
+
+chinook <- "/Users/katebecker/Documents/Bren/Winter/240/final/eds240-visualizations/images/kspencer_chinook.jpg"
+coho <- "/Users/katebecker/Documents/Bren/Winter/240/final/eds240-visualizations/images/kspencer_coho.jpg"
+sockeye <-"/Users/katebecker/Documents/Bren/Winter/240/final/eds240-visualizations/images/sockeye-salmon.jpg"
+pink <- "/Users/katebecker/Documents/Bren/Winter/240/final/eds240-visualizations/images/kspencer_pink.jpg"
+chum <- "/Users/katebecker/Documents/Bren/Winter/240/final/eds240-visualizations/images/kspencer_chum.jpg"
+
+
+salmon_lolli <- alaska |> 
+  filter(year == 1985) |> 
+  slice_max(order_by = number_of_fish_estimated, n = 15) |> 
+  ggplot(aes(x = fct_reorder(species_name, number_of_fish_estimated), y = number_of_fish_estimated)) +
+  ggalt::geom_lollipop() +
+  scale_y_continuous(labels = scales::comma, limits = c(0,60000000)) + 
+  coord_flip() +
+  theme_minimal() +
+  labs(y = "Catch Numbers", 
+       x = "Salmon Species", 
+       title = "Commerical Salmon Catches in 1985")
+
+#salmon_lolli +
+  #geom_image(aes(x = 0, y = 0, image = chinook_img, size = 0.5))
+
+chinook_img <- readJPEG(chinook, native = TRUE) 
+chum_img <-readJPEG(chum, native = TRUE)
+sockeye_img <-readJPEG(sockeye, native = TRUE)
+coho_img <-readJPEG(coho, native = TRUE)
+pink_img <-readJPEG(pink, native = TRUE)
+
+
+# adding image to graph  
+img_graph <- salmon_lolli +                   
+  inset_element(p = chinook_img, 
+                left = 0.4, 
+                bottom = 0.65, 
+                right = 0.85, 
+                top = 0.5) +
+  inset_element(p = chum_img, 
+                left = 0.2, 
+                bottom = 0.65, 
+                right = 0.95, 
+                top = 0.5) +
+  inset_element(p = sockeye_img, 
+                left = 0.4, 
+                bottom = 1.2, 
+                right = 0.85, 
+                top = 1.5) +
+  inset_element(p = pink_img, 
+                left = 0.4, 
+                bottom = 0.65, 
+                right = 0.85, 
+                top = 0.5) +
+  inset_element(p = coho_img, 
+                left = 0.4, 
+                bottom = 0.65, 
+                right = 1.15, 
+                top = 0.5) 
+
+
+# printing graph with image  
+print(img_graph)
+
+
+```
+```{r}
+names(alaska)
+```
+
+
+```{r}
+ggplot(data = alaska, aes(x = year, y = number_of_fish_estimated, colour = species_name)) +
+  geom_point() +
+  scale_x_continuous()
+
+```
+
+```{r}
+ggplot(alaska, aes(x = year, y = number_of_fish_estimated)) +
+  geom_density_2d_filled()
+```
+```{r}
+library(stringr)
+library(prismatic)
+library(Cairo)
+library(scales)
+library(extrafont)
+
+loadfonts(device = "win")
+```
+```{r}
+```
+
+
+```{r}
+alaska$area <- as.factor(alaska$area)
+
+summary_stats <- alaska %>%
+  group_by(area) %>%
+  na.omit() %>%
+  summarise(mean_fish = mean(number_of_fish_estimated),
+            sum_fish = sum(number_of_fish_estimated)) %>%
+  mutate(mean_fish= round(mean_fish, digits = 0))
+
+Nrs <- alaska %>%
+  group_by(area) %>%
+  count()
+
+summary_all <- left_join(summary_stats, Nrs, by = "area")
+```
+
+
+```{r}
+#color choice
+prismatic::color(c( "#6C5B7B" ,"#C06C84","#F67280","#F8B195"))
+
+#ggplot2
+ggplot(summary_all) +
+  
+  #make custom panel grid
+  geom_hline(yintercept = 0, color = "lightgrey") +
+  geom_hline(yintercept = 20000000, color = "lightgrey") +
+  geom_hline(yintercept = 40000000, color = "lightgrey") +
+  geom_hline(yintercept = 60000000, color = "lightgrey") +
+  geom_hline(yintercept = 80000000, color = "lightgrey") +
+  
+  geom_col(aes(
+    x = reorder(str_wrap(area,5),sum_fish), #is numeric
+    y = sum_fish,#is numeric
+    fill = sum_fish), #is a factor
+    position = "dodge2",
+    show.legend = TRUE,
+    alpha = .9) +
+      
+      #new fill and legend title for number of tracks per region
+  scale_fill_gradientn("Fish Sum",
+                       colours = c( "#6C5B7B","#C06C84","#F67280","#F8B195"))+
+  
+  #mean gain per region
+  geom_point(aes(x = reorder(str_wrap(area,5),sum_fish),
+                 y = mean_fish),
+             size = 3,
+             color = "gray12")+
+  
+  #lollipop shaft for mean gain per region
+  geom_segment(aes(
+    x = reorder(str_wrap(area,5),sum_fish),
+    y = 0,
+    xend = reorder(str_wrap(area,5),sum_fish),
+    yend = 2000000),
+    linetype = "dashed",
+    color = "gray12") +
+  
+  coord_polar()
+      
+```
+
